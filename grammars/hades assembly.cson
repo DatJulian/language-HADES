@@ -45,7 +45,7 @@ repository:
         name: "constant.numeric.bin"
       }
       {
-        match: "\\b(?<=#)(-?[0-9]+)\\b"
+        match: "(?<=#)(-?[0-9]+)\\b"
         name: "constant.numeric.dec"
       }
       {

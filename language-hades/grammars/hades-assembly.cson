@@ -1,28 +1,17 @@
+name: "HADES Assembly"
+scopeName: "source.hades-asm"
 fileTypes: [
   "has"
 ]
-name: "HADES Assembly"
 patterns: [
   {
-    include: "#registers"
-  }
-  {
-    include: "#mnemonics"
-  }
-  {
-    include: "#constants"
-  }
-  {
     include: "#entities"
-  }
-  {
-    include: "#comments"
   }
   {
     include: "#preprocessor"
   }
   {
-    include: "#strings"
+    include: "#comments"
   }
 ]
 repository:
@@ -41,7 +30,7 @@ repository:
   constants:
     patterns: [
       {
-        match: "\\b(?<=#)(0b[01]+|[01]+b)\\b"
+        match: "(?<=#)(0b[01]+|[01]+b)\\b"
         name: "constant.numeric.bin"
       }
       {
@@ -49,44 +38,129 @@ repository:
         name: "constant.numeric.dec"
       }
       {
-        match: "\\b(?<=#)((0x[0-9a-fA-F]+)|([0-9a-fA-F]+h))\\b"
+        match: "(?<=#)((0x[0-9a-fA-F]+)|([0-9a-fA-F]+h))\\b"
         name: "constant.numeric.hex"
+      }
+      {
+        match: "'((\\\\.)|([^\\\\]))'"
+        captures:
+          "2":
+            name: "constant.character.escape.hades-asm"
+        name: "string.quoted.single"
       }
     ]
   entities:
     patterns: [
       {
-        match: "@((?i:code|mac|data))\\b\\s*([A-Za-z_][A-Za-z0-9_]+)?"
+        begin: "@((?i:mac|code))\\b\\s*([A-Za-z_][A-Za-z0-9_]+)?\\s*{"
+        beginCaptures:
+          "1":
+            name: "storage.type"
+          "2":
+            name: "entity.name.function"
+        name: "meta.block.code"
+        end: "@}"
+        patterns: [
+           {
+             include: "#registers"
+           }
+           {
+             include: "#mnemonics"
+           }
+           {
+             include: "#constants"
+           }
+           {
+             include: "#strings"
+           }
+           {
+             include: "#macrocall"
+           }
+           {
+             include: "#references"
+           }
+           {
+             include: "#preprocessor"
+           }
+           {
+             include: "#comments"
+           }
+        ]
+      }
+      {
+        begin: "@((?i:data))\\b\\s*([A-Za-z_][A-Za-z0-9_]+)?\\s*{"
+        beginCaptures:
+          "1":
+            name: "storage.type"
+          "2":
+            name: "entity.name.function"
+        name: "meta.block.data"
+        end: "@}"
+        patterns: [
+           {
+             include: "#constants"
+           }
+           {
+             include: "#strings"
+           }
+           {
+             include: "#references"
+           }
+           {
+             include: "#preprocessor"
+           }
+           {
+             include: "#comments"
+           }
+        ]
+      }
+      {
+        match: "@((?i:data))\\b\\s*([A-Za-z_][A-Za-z0-9_]+)?\\s*(\"(?:[^\"\\\\]|\\\\.)*\")"
         captures:
           "1":
             name: "storage.type"
           "2":
             name: "entity.name.function"
-        name: "meta.block"
+          "3":
+            name: "constant.character"
+            patterns: [
+               {
+                  include: "#string_escaped_char"
+               }
+            ]
+        name: "meta.block.data"
       }
+    ]
+  macrocall:
+    patterns: [
       {
-        match: "(?<=@)((?:call))\\b\\s*([A-Za-z_][A-Za-z0-9_]+)?"
+        match: "@((?i:call))\\b\\s*([A-Za-z_][A-Za-z0-9_]+)?"
         captures:
           "1":
             name: "keyword.call"
           "2":
             name: "entity.name.function"
-        name: "meta.block"
       }
+    ]
+  references:
+    patterns: [
       {
-        match: "(?<=\\*)([A-Za-z_][A-Za-z_0-9]+)"
-        name: "entity.name.function"
-      }
-      {
-        match: "\\s*([A-Za-z_][A-Za-z_0-9]+:)"
-        name: "entity.name.function"
-      }
-      {
-        match: "(?<=#)([A-Za-z_][A-Za-z_0-9]+)"
+        match: "\\*([A-Za-z_][A-Za-z_0-9]+)"
         captures:
           "1":
-            name: "entity.name.function"
-        name: "meta.block"
+             name: "entity.name.function"
+      }
+      {
+        match: "\\s*([A-Za-z_][A-Za-z_0-9]+):"
+        captures:
+          "1":
+             name: "constant.variable.jumpmark"
+      }
+      {
+        match: "#([A-Za-z_][A-Za-z_0-9]+)"
+        captures:
+          "1":
+            name: "constant.variable.jumpmark"
       }
     ]
   mnemonics:
@@ -171,7 +245,7 @@ repository:
         begin: "^\\s*@((?i:l?def))\\b"
         captures:
           "1":
-            name: "keyword.control.import.c"
+            name: "keyword.control.define"
         name: "meta.preprocessor.c"
         patterns: [
           {
@@ -196,14 +270,33 @@ repository:
         name: "constant.language.registers.general-purpose"
       }
     ]
+  string_escaped_char:
+    patterns: [
+      {
+        match: '''(?x)\\\\ (
+            \\\\             |
+            [abefnprtv'"?]   |
+            [0-3]\\d{,2}     |
+            [4-7]\\d?        |
+            x[a-fA-F0-9]{,2} |
+            u[a-fA-F0-9]{,4} |
+            U[a-fA-F0-9]{,8} )
+        '''
+        name: 'constant.character.escape.c'
+      }
+      {
+        match: '\\\\.'
+        name: 'invalid.illegal.unknown-escape.c'
+      }
+    ]
   strings:
     patterns: [
       {
-        begin: "[\"'`]"
+        begin: "\""
         beginCaptures:
           "0":
             name: "punctuation.definition.string.begin.asm"
-        end: "[\"'`]"
+        end: "\""
         endCaptures:
           "0":
             name: "punctuation.definition.string.end.asm"
@@ -217,21 +310,4 @@ repository:
           }
         ]
       }
-      {
-        begin: "'"
-        beginCaptures:
-          "0":
-            name: "punctuation.definition.string.begin.c"
-        end: "'"
-        endCaptures:
-          "0":
-            name: "punctuation.definition.string.end.c"
-        name: "string.quoted.single.c"
-        patterns: [
-          {
-            include: "#string_escaped_char"
-          }
-        ]
-      }
     ]
-scopeName: "source.hades-asm"

@@ -1,0 +1,7 @@
+".source.hades-asm":
+  editor:
+    commentStart: "// "
+    increaseIndentPattern: "^(.*@.*{([^}]*)|[^\"/]+:.*)$"
+    decreaseIndentPattern: "^(.*@}[^}]*|[^\"/]+:.*)$"
+    foldingStartMarker: "^[^\"\/]*@(code|mac|data).*{.*$"
+    foldingStopMarker: '^[^\"\/]*@}'
